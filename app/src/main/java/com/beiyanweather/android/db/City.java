@@ -1,6 +1,8 @@
 package com.beiyanweather.android.db;
 
-public class City {
+import org.litepal.crud.LitePalSupport;
+
+public class City extends LitePalSupport {
 
     private int id;
     private String cityName;    // 记录市的名字
