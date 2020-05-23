@@ -1,6 +1,7 @@
 package com.beiyanweather.android;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,17 +10,15 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.beiyanweather.android.db.City;
 import com.beiyanweather.android.db.County;
 import com.beiyanweather.android.db.Province;
+import com.beiyanweather.android.gson.Weather;
 import com.beiyanweather.android.util.HttpUtil;
 import com.beiyanweather.android.util.Utility;
 
@@ -86,9 +85,11 @@ public class ChooseAreaFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.choose_area, container, false);
+        // 获取控件实例
         titleText = (TextView) view.findViewById(R.id.title_text);
         backButton = (Button) view.findViewById(R.id.back_button);
         listView = (ListView) view.findViewById(R.id.list_view);
+        // 初始化ArrayAdapter，并将它设置为ListView的适配器
         adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, dataList);
         listView.setAdapter(adapter);
         return view;
@@ -97,21 +98,46 @@ public class ChooseAreaFragment extends Fragment {
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        // ListView点击事件
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
+            /*
+             * 当点击了某个省的时候会进入到ListView的onItemClick()方法中，
+             * 这时，会根据当前的级别来判断是去调用queryCities()方法还是queryCounties()方法，
+             */
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 if (currentLevel == LEVEL_PROVINCE)
                 {
+                    // queryCities()方法是查询市级数据
                     selectedProvince = provinceList.get(position);
                     queryCities();
                 }
                 else if (currentLevel == LEVEL_CITY)
                 {
+                    // queryCounties()方法是查询县级数据
                     selectedCity = cityList.get(position);
                     queryCounties();
                 }
+                else if (currentLevel == LEVEL_COUNTY)
+                {
+                    String weatherId = countyList.get(position).getWeatherId();
+                    if (getActivity() instanceof MainActivity)
+                    {
+                        Intent intent = new Intent(getActivity(), WeatherActivity.class);
+                        intent.putExtra("weather_id", weatherId);
+                        startActivity(intent);
+                        getActivity().finish();
+                    }else if (getActivity() instanceof WeatherActivity)
+                    {
+                        WeatherActivity activity = (WeatherActivity) getActivity();
+                        activity.drawerLayout.closeDrawers();
+                        activity.swipeRefresh.setRefreshing(true);
+                        activity.requestWeather(weatherId);
+                    }
+                }
             }
         });
+        // Button点击事件
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -125,17 +151,21 @@ public class ChooseAreaFragment extends Fragment {
                 }
             }
         });
+        // 调用queryProvinces()方法，从这里开始加载省级数据
         queryProvinces();
-
     }
 
     /**
      * 查询全国所有的省，优先从数据库查询，如果没有查询到再去服务器上查询
      */
     private void queryProvinces() {
+        // 将头布局的标题设置为中国
         titleText.setText("中国");
+        // 因为省级列表不能再返回了，所以将返回按钮隐藏起来
         backButton.setVisibility(View.GONE);
+        // 调用LitePal的查询接口来从数据库中读取省级数据
         provinceList = LitePal.findAll(Province.class);
+        // 如果读到了，直接将数据显示到界面上
         if (provinceList.size() > 0)
         {
             dataList.clear();
@@ -146,8 +176,10 @@ public class ChooseAreaFragment extends Fragment {
             adapter.notifyDataSetChanged();
             listView.setSelection(0);
             currentLevel = LEVEL_PROVINCE;
+        // 如果没有读取到数据，组装出一个请求地址
         }else {
             String address = "http://guolin.tech/api/china";
+            // 调用queryFromServer()方法从服务器查询数据
             queryFromServer(address, "province");
         }
     }
@@ -210,14 +242,16 @@ public class ChooseAreaFragment extends Fragment {
      */
     private void queryFromServer(String address, final String type) {
         showProgressDialog();
+        // 调用HttpUtil的sendOkHttpRequest()方法向服务器发送请求
         HttpUtil.sendOkHttpRequest(address, new Callback() {
-
+            // 响应的数据会回调到onResponse()方法中
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 String responseText = response.body().string();
                 boolean result = false;
                 if ("province".equals(type))
                 {
+                    // 调用Utility的handleProvinceResponse()方法来解析和处理服务器返回的数据，并存储到数据库中
                     result = Utility.handleProvinceResponse(responseText);
                 }else if ("city".equals(type)){
                     result = Utility.handleCityResponse(responseText, selectedProvince.getId());
@@ -226,6 +260,11 @@ public class ChooseAreaFragment extends Fragment {
                 }
                 if (result)
                 {
+                    /**
+                     * 再次调用queryProvinces()方法重新加载省级数据。
+                     * 由于queryProvinces()方法牵扯到了UI操作，所以必须要在主线程中调用，
+                     * 这里借助了runOnUiThread()方法来实现从子线程切换到主线程。
+                     */
                     getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {

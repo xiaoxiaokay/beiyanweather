@@ -5,6 +5,8 @@ import android.text.TextUtils;
 import com.beiyanweather.android.db.City;
 import com.beiyanweather.android.db.County;
 import com.beiyanweather.android.db.Province;
+import com.beiyanweather.android.gson.Weather;
+import com.google.gson.Gson;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -96,4 +98,20 @@ public class Utility {
         }
         return false;
     }
+
+    /**
+     * 将返回的JSON数据解析成Weather实体类
+     */
+     public static Weather handleWeatherResponse(String response){
+         try {
+             // handleWeatherResponse()方法先通过JSONObject和JSONArray将天气数据中的主题内容解析出来
+             JSONObject isonObject = new JSONObject(response);
+             JSONArray jsonArray = isonObject.getJSONArray("HeWeather");
+             String weatherContent = jsonArray.getJSONObject(0).toString();
+             return new Gson().fromJson(weatherContent, Weather.class);
+         }catch (Exception e){
+             e.printStackTrace();
+         }
+         return null;
+     }
 }

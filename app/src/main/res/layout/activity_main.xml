@@ -6,6 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <!--定义一个FrameLayout，将ChooseAreaFragment添加进来，让它充满整个布局-->
     <fragment
         android:id="@+id/choose_area_fragment"
         android:name="com.beiyanweather.android.ChooseAreaFragment"
