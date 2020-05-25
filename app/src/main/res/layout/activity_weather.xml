@@ -4,60 +4,69 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/colorPrimary"
     tools:context=".WeatherActivity">
 
+    <!--背景图片
+        scaleType：原图按等比例大小在中心进行缩放，直至填满整个ImageView-->
     <ImageView
         android:id="@+id/bing_pic_img"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="centerCrop"/>
 
+    <!--第一个子控件用于作为主屏幕中显示的内容，
+        第二个子控件用于作为滑动菜单中显示的内容，在第二个子控件的位置添加了用于遍历省市县数据的碎片-->
     <androidx.drawerlayout.widget.DrawerLayout
         android:id="@+id/drawer_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-        android:id="@+id/swipe_refresh"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <ScrollView
-            android:id="@+id/weather_layout"
+        <!--在ScrollView的外面嵌套一层SwipeRefreshLayout，这样ScrollView就自动拥有下拉刷新功能了-->
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipe_refresh"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scrollbars="none"
-            android:overScrollMode="never">
+            android:layout_height="match_parent">
 
-            <LinearLayout
-                android:orientation="vertical"
+            <!--因为天气界面中的内容比较多，所以使用ScrollView可以通过滚动的方式查看屏幕以外的内容-->
+            <ScrollView
+                android:id="@+id/weather_layout"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:fitsSystemWindows="true">
+                android:layout_height="match_parent"
+                android:scrollbars="none"
+                android:overScrollMode="never">
 
-                <include layout="@layout/title" />
+                <!--由于ScrollView的内部只允许存在一个直接子布局，
+                    所以这里又嵌套了一个垂直方向的LinearLayout，
+                    然后将刚才定义的所有布局逐个引入。
+                    android:fitsSystemWindows为状态栏留出它的空间-->
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fitsSystemWindows="true">
 
-                <include layout="@layout/now" />
+                    <include layout="@layout/title" />
 
-                <include layout="@layout/forecast" />
+                    <include layout="@layout/now" />
 
-                <include layout="@layout/aqi" />
+                    <include layout="@layout/forecast" />
 
-                <include layout="@layout/suggestion" />
+                    <include layout="@layout/aqi" />
 
-            </LinearLayout>
+                    <include layout="@layout/suggestion" />
 
-        </ScrollView>
+                </LinearLayout>
 
-    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+            </ScrollView>
+
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
         <fragment
             android:id="@+id/choose_area_fragment"
             android:name="com.beiyanweather.android.ChooseAreaFragment"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_gravity="start"/>
+            android:layout_gravity="start" />
 
     </androidx.drawerlayout.widget.DrawerLayout>
 

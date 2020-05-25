@@ -34,9 +34,14 @@ public class AutoUpdateService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        updateWeather();
-        updateBingPic();
+        updateWeather();  // 调用updateWeather()方法来更新天气
+        updateBingPic();  // 调用 updateBingPic()方法来更新背景图片
         AlarmManager manager = (AlarmManager) getSystemService(ALARM_SERVICE);
+        /*
+         * 为了保证软件不会消耗过多的流量，这里将时间间隔设置为8小时，
+         * 8小时后AutoUpdateService的onStartCommand()方法就会重新执行，
+         * 这样也就实现后台定时更新的功能了
+         */
         int anHour = 8 * 60 * 60 * 1000; // 这是8小时的毫秒数
         long triggerAtTime = SystemClock.elapsedRealtime() + anHour;
         Intent i = new Intent(this, AutoUpdateService.class);
@@ -50,6 +55,10 @@ public class AutoUpdateService extends Service {
      * 更新天气信息
      */
     private void updateWeather(){
+        /*
+         * 将更新后的数据直接存储到SharedPreferences文件中就可以了，
+         * 因为打开WeatherActivity的时候都会优先从SharedPreferences缓存中读取数据
+         */
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         String weatherString = prefs.getString("weather", null);
         if (weatherString != null){
